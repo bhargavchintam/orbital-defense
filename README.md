@@ -40,6 +40,12 @@ music / SFX are **not bundled** here — drop your own `player.png`, `enemy1-3.p
 and `music.ogg` / `projectile.wav` / `impact.wav` into `Resources/audio/` to run
 it end-to-end.
 
+The code in this repo is licensed under **MIT** (see `LICENSE`); the CC0-marked
+assets above are my own work and are additionally dedicated to the public domain,
+which only broadens what MIT already allows — there's no conflict. The
+not-bundled third-party ship/enemy/projectile sprites and audio you supply
+yourself are outside this repo and its license; check their own terms before use.
+
 ## Tech
 Panda3D · DirectGUI (HUD, sliders, menus) · GLSL fragment shader (starfield) ·
 2D sprite gameplay on `aspect2d`.

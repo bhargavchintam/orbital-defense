@@ -1,3 +1,6 @@
+import os
+import sys
+
 from panda3d.core import loadPrcFileData
 loadPrcFileData("", "window-title Orbital Defense")
 loadPrcFileData("", "win-size 1280 720")
@@ -26,6 +29,33 @@ ENEMY_TYPES = {
 TOTAL_ROUNDS = 5
 ENEMIES_ROUND_1 = 4
 ENEMIES_PER_ROUND = 2
+
+# Sprites/audio the README asks the user to supply themselves (not bundled in
+# the repo). The 3 committed sprites (hp/shield/shield_sphere) aren't listed
+# here since they always ship with the repo.
+REQUIRED_ASSETS = [
+    "Resources/sprites/player.png",
+    "Resources/sprites/enemy1.png",
+    "Resources/sprites/enemy2.png",
+    "Resources/sprites/enemy3.png",
+    "Resources/sprites/playerProjectile.png",
+    "Resources/sprites/enemyProjectile.png",
+    "Resources/sprites/ammo.png",
+    "Resources/audio/music.ogg",
+    "Resources/audio/projectile.wav",
+    "Resources/audio/impact.wav",
+]
+
+def _check_required_assets():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    missing = [p for p in REQUIRED_ASSETS if not os.path.isfile(os.path.join(base_dir, p))]
+    if missing:
+        print("Orbital Defense can't start: required asset file(s) are missing:")
+        for p in missing:
+            print("  - %s (expected at %s)" % (p, os.path.join(base_dir, p)))
+        print("\nThese assets aren't bundled with this repo. See the \"A note on "
+              "assets\" section of README.md for what to supply and where.")
+        sys.exit(1)
 
 def length(x, y):
     return sqrt(x * x + y * y )
@@ -573,5 +603,6 @@ class Game(ShowBase):
         return task.cont
 
 if __name__ == "__main__":
+    _check_required_assets()
     Game().run()
     
