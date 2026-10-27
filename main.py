@@ -1,5 +1,4 @@
 import os
-import sys
 
 from panda3d.core import loadPrcFileData
 loadPrcFileData("", "window-title Orbital Defense")
@@ -32,8 +31,9 @@ ENEMIES_PER_ROUND = 2
 
 # Sprites/audio the README asks the user to supply themselves (not bundled in
 # the repo). The 3 committed sprites (hp/shield/shield_sphere) aren't listed
-# here since they always ship with the repo.
-REQUIRED_ASSETS = [
+# here since they always ship with the repo. The game still runs without them:
+# a missing sprite is drawn as a placeholder shape and a missing sound is skipped.
+EXTERNAL_ASSETS = [
     "Resources/sprites/player.png",
     "Resources/sprites/enemy1.png",
     "Resources/sprites/enemy2.png",
@@ -46,23 +46,54 @@ REQUIRED_ASSETS = [
     "Resources/audio/impact.wav",
 ]
 
-def _check_required_assets():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    missing = [p for p in REQUIRED_ASSETS if not os.path.isfile(os.path.join(base_dir, p))]
+# Placeholder shape and colour for each sprite above. Ships are triangles that
+# point the way they face; shots and the ammo pickup are plain cards.
+PLACEHOLDERS = {
+    "Resources/sprites/player.png": ("triangle", (0.3, 0.8, 1, 1)),
+    "Resources/sprites/enemy1.png": ("triangle", (1, 0.35, 0.35, 1)),
+    "Resources/sprites/enemy2.png": ("triangle", (1, 0.6, 0.2, 1)),
+    "Resources/sprites/enemy3.png": ("triangle", (0.85, 0.4, 1, 1)),
+    "Resources/sprites/playerProjectile.png": ("card", (0.6, 1, 1, 1)),
+    "Resources/sprites/enemyProjectile.png": ("card", (1, 0.5, 0.3, 1)),
+    "Resources/sprites/ammo.png": ("card", (1, 0.85, 0.3, 1)),
+}
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def asset_exists(path):
+    return os.path.isfile(os.path.join(BASE_DIR, path))
+
+def _report_missing_assets():
+    missing = [p for p in EXTERNAL_ASSETS if not asset_exists(p)]
     if missing:
-        print("Orbital Defense can't start: required asset file(s) are missing:")
+        print("Orbital Defense: some asset files are missing, so placeholders are used:")
         for p in missing:
-            print("  - %s (expected at %s)" % (p, os.path.join(base_dir, p)))
-        print("\nThese assets aren't bundled with this repo. See the \"A note on "
-              "assets\" section of README.md for what to supply and where.")
-        sys.exit(1)
+            print("  - %s (expected at %s)" % (p, os.path.join(BASE_DIR, p)))
+        print("\nMissing sprites are drawn as coloured shapes and missing sounds are "
+              "skipped. See the \"A note on assets\" section of README.md to add the "
+              "real files.")
+
+def placeholder_shape(image, parent):
+    # Same -1..1 frame as an OnscreenImage card, so Sprite scaling and facing still work.
+    shape, color = PLACEHOLDERS.get(image, ("card", (1, 1, 1, 1)))
+    cm = CardMaker("placeholder")
+    if shape == "triangle":
+        cm.setFrame((-1, 0, -1), (1, 0, -1), (0, 0, 1), (0, 0, 1))
+    else:
+        cm.setFrame(-1, 1, -1, 1)
+    node = parent.attachNewNode(cm.generate())
+    node.setColor(*color)
+    return node
 
 def length(x, y):
     return sqrt(x * x + y * y )
 
 class Sprite:
     def __init__(self, image, w_px, h_px, x, y, parent):
-        self.node = OnscreenImage(image = image, parent = parent)
+        if asset_exists(image):
+            self.node = OnscreenImage(image = image, parent = parent)
+        else:
+            self.node = placeholder_shape(image, parent)
         self.node.setTransparency(TransparencyAttrib.MAlpha)
         self.node.setScale((w_px / 720) * 1.4, 1, (h_px / 720) * 1.4)
         self.x, self.y = x, y
@@ -96,14 +127,14 @@ class Game(ShowBase):
         # any slider change are remembered regardless of the audio backend.
         self.music_volume = 0.5
         self.sfx_volume = 0.5
-        self.music = self.loader.loadMusic("Resources/audio/music.ogg")
+        self.music = self.load_audio(self.musicManager, "Resources/audio/music.ogg")
         self.music.setLoop(True)
         self.musicManager.setVolume(self.music_volume)   # 50% music default
         self.music.play()                         # plays immediately, through menu + gameplay
         # A small pool of shoot SFX so rapid bursts overlap cleanly instead of cutting off.
-        self.sfx_shoot_pool = [self.loader.loadSfx("Resources/audio/projectile.wav") for _ in range(4)]
+        self.sfx_shoot_pool = [self.load_audio(self.sfxManagerList[0], "Resources/audio/projectile.wav") for _ in range(4)]
         self.sfx_shoot_idx = 0
-        self.sfx_impact = self.loader.loadSfx("Resources/audio/impact.wav")
+        self.sfx_impact = self.load_audio(self.sfxManagerList[0], "Resources/audio/impact.wav")
         self.sfxManagerList[0].setVolume(self.sfx_volume)   # 50% SFX default
 
         self.aspect = self.getAspectRatio()
@@ -116,7 +147,13 @@ class Game(ShowBase):
         self.build_starfield()
         self.show_menu()
         self.taskMgr.add(self.update, "update")
-    
+
+    def load_audio(self, manager, path):
+        # Audio is not bundled (see README): skip a missing file with a silent sound.
+        if asset_exists(path):
+            return self.loader.loadSound(manager, path)
+        return manager.getNullSound()
+
     def show_menu(self):
         self.state = "menu"
         if not self.suspended_game:        # keep a paused game alive so Continue can resume it
@@ -603,6 +640,6 @@ class Game(ShowBase):
         return task.cont
 
 if __name__ == "__main__":
-    _check_required_assets()
+    _report_missing_assets()
     Game().run()
     

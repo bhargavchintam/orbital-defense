@@ -30,6 +30,8 @@ hot — all over an animated GLSL starfield.
 pip install panda3d
 python main.py
 ```
+The game starts even without the sprites and sounds that are not bundled. It
+uses simple placeholders for them (see below).
 
 ## A note on assets
 This repo includes the code, the **self-made starfield shader**, and the
@@ -39,6 +41,11 @@ music / SFX are **not bundled** here — drop your own `player.png`, `enemy1-3.p
 `playerProjectile.png`, `enemyProjectile.png`, `ammo.png` into `Resources/sprites/`
 and `music.ogg` / `projectile.wav` / `impact.wav` into `Resources/audio/` to run
 it end-to-end.
+
+**Without them, the game still runs.** Each missing sprite is drawn as a plain
+coloured shape (the ships as triangles that point where they face, the shots and
+the ammo pickup as cards), and each missing sound is skipped. The game prints the
+list of missing files when it starts.
 
 The code in this repo is licensed under **MIT** (see `LICENSE`); the CC0-marked
 assets above are my own work and are additionally dedicated to the public domain,
