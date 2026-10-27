@@ -56,3 +56,7 @@ yourself are outside this repo and its license; check their own terms before use
 ## Tech
 Panda3D · DirectGUI (HUD, sliders, menus) · GLSL fragment shader (starfield) ·
 2D sprite gameplay on `aspect2d`.
+
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md). CI starts a game with the placeholder
+sprites on every push and pull request.
