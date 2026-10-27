@@ -1,0 +1,45 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install panda3d pytest -r requirements.txt
+      # There are no unit tests yet. pytest exits with code 5 when it finds
+      # no tests, so allow that; any tests added later will run here.
+      - name: Run the unit tests
+        run: python -m pytest || [ $? -eq 5 ]
+      # The ship sprites and audio are not in the repo, so this also checks
+      # the placeholder fallback. The game has no headless flag, so start it
+      # in a virtual display (xvfb) with audio off and play a few frames.
+      - name: Start a game with placeholder sprites (virtual display, no audio)
+        run: |
+          xvfb-run -a python -c "
+          from panda3d.core import loadPrcFileData
+          loadPrcFileData('', 'audio-library-name null')
+          import main
+          main._report_missing_assets()
+          game = main.Game()
+          game.start_game()
+          game.spawn_enemy()
+          game.spawn_pickup()
+          game.fire_one()
+          game.enemy_fire(game.enemies[0])
+          for _ in range(10):
+              game.taskMgr.step()
+          print('orbital-defense started a game and rendered 10 frames')
+          "
